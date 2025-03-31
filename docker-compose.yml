@@ -3,8 +3,8 @@ services:
     image: linuxserver/wireguard
     container_name: wireguard
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1004
+      - PGID=1004
       - SERVERURL=your_vpn_server_url  # e.g., "myserver.com"
       - SERVERPORT=51820
       - PEERS=1  # number of peers (clients) to generate
