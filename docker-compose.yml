@@ -1,24 +1,46 @@
 services:
+
+  # WireGuard VPN service
   wireguard:
-    image: linuxserver/wireguard
+    image: linuxserver/wireguard:latest
     container_name: wireguard
-    environment:
-      - PUID=1004
-      - PGID=1004
-      - SERVERURL=your_vpn_server_url  # e.g., "myserver.com"
-      - SERVERPORT=51820
-      - PEERS=1  # number of peers (clients) to generate
-      - PEERDNS=8.8.8.8  # DNS server
-      - ALLOWEDIPS=0.0.0.0/0  # All traffic
-    volumes:
-      - ./config:/config  # Mounts a local directory `./config` to `/config` inside the container
-      - /etc/wireguard  # Optionally, if you want to mount a custom directory from the host
-    ports:
-      - "51820:51820/udp"
     cap_add:
       - NET_ADMIN
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv6.conf.all.forwarding=1
-      - net.ipv6.conf.default.forwarding=1
+    volumes:
+      - ./config:/config
+    ports:
+      # Port for WireGuard-UI
+      - "5000:5000"
+      # Port of the WireGuard VPN server
+      - "51820:51820/udp"
     restart: unless-stopped
+
+  # WireGuard-UI service
+  wireguard-ui:
+    image: ngoduykhanh/wireguard-ui:latest
+    container_name: wireguard-ui
+    depends_on:
+      - wireguard
+    cap_add:
+      - NET_ADMIN
+    # Use the network of the 'wireguard' service
+    # This enables to show active clients in the status page
+    network_mode: service:wireguard
+    environment:
+      - SENDGRID_API_KEY
+      - EMAIL_FROM_ADDRESS
+      - EMAIL_FROM_NAME
+      - SESSION_SECRET
+      - WGUI_USERNAME=admin
+      - WGUI_PASSWORD=password
+      - WG_CONF_TEMPLATE
+      - WGUI_MANAGE_START=true
+      - WGUI_MANAGE_RESTART=true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+    volumes:
+      - ./db:/app/db
+      - ./config:/etc/wireguard
